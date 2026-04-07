@@ -2,7 +2,7 @@
 
 Welcome, and thank you for your interest in joining mama health! This challenge simulates a real-world task where you need to quickly prototype a **mobile application** supported by a **robust, real-time backend**. It will test your ability to structure a project, handle real-time data flow, ensure a good user experience on mobile, and leverage modern backend tooling.
 
-We respect your time and have designed this exercise to be completed in **4-6 hours**. Please don't feel the need to build a perfect, production-ready system. We're most interested in your **architectural approach**, your **design decisions**, and how you integrate different technologies to deliver a functional and delightful user experience.
+We respect your time and have designed this exercise to be completed in **3-6 hours**. Please don't feel the need to build a perfect, production-ready system. We're most interested in your **architectural approach**, your **design decisions**, and how you integrate different technologies to deliver a functional and delightful user experience.
 
 Good luck! ✨
 
@@ -88,7 +88,7 @@ don't just rely on the AI.
 
 ## Deliverables 📦
 
-Please submit a link to your forked and completed GitHub repository. **Keep the repository private** and send an invite to **johannes.unruh@mamahealth.io** (tj-mm) and **lorenzo.famiglini@mamahealth.io** (lollomamahealth) a short notification email to **mattia.munari@mamahealth.io**.
+Please submit a link to your forked and completed GitHub repository. **Keep the repository private** and send an invite to **johannes.unruh@mamahealth.io** (tj-mm) and **lorenzo.famiglini@mamahealth.io** (lollomamahealth) and a short notification email to **rebecca.looschelders@mamahealth.io**.
 
 The repository should contain:
 
