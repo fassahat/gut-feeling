@@ -2,11 +2,11 @@ import asyncio
 import json
 import logging
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.database import get_db
+from app.database import DbDep
 from app.models.message import Message
 from app.schemas.message import MessageOut, WebSocketMessageIn
 from app.services.chatbot import generate_response
@@ -31,7 +31,7 @@ async def _persist_message(
 async def websocket_chat(
     websocket: WebSocket,
     user_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: DbDep,
 ) -> None:
     await manager.connect(user_id, websocket)
     await manager.send_json(user_id, {"type": "connected"})
