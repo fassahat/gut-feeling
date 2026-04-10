@@ -56,15 +56,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
   }, [currentUser]);
 
-  // Append new messages from WebSocket
+  // Append new messages from WebSocket (only for current user)
   useEffect(() => {
-    if (lastMessage) {
+    if (lastMessage && lastMessage.user_id === currentUser) {
       setMessages((prev) => {
         const exists = prev.some((m) => m.id === lastMessage.id);
         return exists ? prev : [...prev, lastMessage];
       });
     }
-  }, [lastMessage]);
+  }, [lastMessage, currentUser]);
 
   const send = useCallback(
     (content: string) => {

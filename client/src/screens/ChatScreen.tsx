@@ -13,6 +13,7 @@ import { ConnectionStatusBanner } from "../components/ConnectionStatusBanner";
 import { MessageBubble } from "../components/MessageBubble";
 import { TypingIndicator } from "../components/TypingIndicator";
 import { UserSwitcher } from "../components/UserSwitcher";
+import { palette, typography, spacing } from "../theme";
 import type { Message } from "../types";
 
 export function ChatScreen() {
@@ -46,9 +47,18 @@ export function ChatScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
+      {/* Header — apothecary jar label feel */}
       <View style={styles.header}>
-        <Text style={styles.title}>Nurse Bubbles</Text>
-        <Text style={styles.subtitle}>Your bubbly gut health companion</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerEmoji}>🫧</Text>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>Nurse Bubbles</Text>
+            <Text style={styles.subtitle}>
+              your bubbly gut health companion
+            </Text>
+          </View>
+        </View>
+        <View style={styles.headerAccent} />
       </View>
 
       <ConnectionStatusBanner status={state.status} />
@@ -67,9 +77,11 @@ export function ChatScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.empty}>
+              <Text style={styles.emptyEmoji}>🍵</Text>
+              <Text style={styles.emptyTitle}>The jar is quiet...</Text>
               <Text style={styles.emptyText}>
                 Say hi to Nurse Bubbles! She's fizzing with excitement to chat
-                about gut health.
+                about your gut health journey.
               </Text>
             </View>
           }
@@ -87,40 +99,69 @@ export function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: palette.cream,
   },
   header: {
-    backgroundColor: "#00897B",
-    paddingTop: 50,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
+    backgroundColor: palette.amber800,
+    paddingTop: 52,
+    paddingBottom: 14,
+    paddingHorizontal: spacing.lg,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  headerEmoji: {
+    fontSize: 32,
+  },
+  headerText: {
+    flex: 1,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#FFF",
+    fontSize: typography.lg,
+    fontWeight: typography.bold,
+    color: palette.amber100,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 13,
-    color: "rgba(255,255,255,0.8)",
-    marginTop: 2,
+    fontSize: typography.sm,
+    fontWeight: typography.medium,
+    color: palette.amber200,
+    marginTop: 1,
+    fontStyle: "italic",
+  },
+  headerAccent: {
+    height: 3,
+    backgroundColor: palette.amber400,
+    borderRadius: 2,
+    marginTop: spacing.md,
+    opacity: 0.5,
   },
   listContainer: {
     flex: 1,
   },
   listContent: {
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
   },
   empty: {
-    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 40,
-    paddingTop: 60,
+    paddingHorizontal: 48,
+    paddingTop: 80,
+  },
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: typography.md,
+    fontWeight: typography.semibold,
+    color: palette.bark,
+    marginBottom: spacing.sm,
   },
   emptyText: {
-    fontSize: 15,
-    color: "#999",
+    fontSize: typography.base,
+    color: palette.amber600,
     textAlign: "center",
     lineHeight: 22,
   },

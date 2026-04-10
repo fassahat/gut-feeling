@@ -1,5 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { USERS, type UserId } from "../config";
+import { palette, typography, spacing, radii } from "../theme";
+
+const USER_DISPLAY: Record<UserId, { name: string; emoji: string }> = {
+  "user-alice": { name: "Alice", emoji: "🌿" },
+  "user-bob": { name: "Bob", emoji: "🍄" },
+};
 
 interface UserSwitcherProps {
   currentUser: UserId;
@@ -9,24 +15,31 @@ interface UserSwitcherProps {
 export function UserSwitcher({ currentUser, onSwitch }: UserSwitcherProps) {
   return (
     <View style={styles.container}>
-      {USERS.map((userId) => {
-        const isActive = userId === currentUser;
-        const label = userId.replace("user-", "");
+      <Text style={styles.label}>brewing as</Text>
+      <View style={styles.pills}>
+        {USERS.map((userId) => {
+          const isActive = userId === currentUser;
+          const display = USER_DISPLAY[userId];
 
-        return (
-          <Pressable
-            key={userId}
-            style={[styles.button, isActive ? styles.buttonActive : null]}
-            onPress={() => onSwitch(userId)}
-          >
-            <Text
-              style={[styles.label, isActive ? styles.labelActive : null]}
+          return (
+            <Pressable
+              key={userId}
+              style={[styles.pill, isActive ? styles.pillActive : null]}
+              onPress={() => onSwitch(userId)}
             >
-              {label}
-            </Text>
-          </Pressable>
-        );
-      })}
+              <Text style={styles.pillEmoji}>{display.emoji}</Text>
+              <Text
+                style={[
+                  styles.pillText,
+                  isActive ? styles.pillTextActive : null,
+                ]}
+              >
+                {display.name}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -34,27 +47,51 @@ export function UserSwitcher({ currentUser, onSwitch }: UserSwitcherProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  button: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderCurve: "continuous",
-    backgroundColor: "#E0E0E0",
-  },
-  buttonActive: {
-    backgroundColor: "#00897B",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: palette.parchment,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.linen,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#555",
-    textTransform: "capitalize",
+    fontSize: typography.xs,
+    fontWeight: typography.medium,
+    color: palette.amber600,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    fontStyle: "italic",
   },
-  labelActive: {
-    color: "#FFF",
+  pills: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.full,
+    borderCurve: "continuous",
+    backgroundColor: palette.cream,
+    borderWidth: 1.5,
+    borderColor: palette.linen,
+  },
+  pillActive: {
+    backgroundColor: palette.amber800,
+    borderColor: palette.amber600,
+  },
+  pillEmoji: {
+    fontSize: 14,
+  },
+  pillText: {
+    fontSize: typography.sm,
+    fontWeight: typography.semibold,
+    color: palette.bark,
+  },
+  pillTextActive: {
+    color: palette.amber100,
   },
 });

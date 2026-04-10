@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { palette, typography, spacing, radii } from "../theme";
 import type { Sender } from "../types";
 
 interface MessageBubbleProps {
@@ -17,17 +18,23 @@ function MessageBubbleRaw({ content, sender, timestamp }: MessageBubbleProps) {
 
   return (
     <View style={[styles.row, isBot ? styles.rowBot : styles.rowUser]}>
-      <View
-        style={[styles.bubble, isBot ? styles.bubbleBot : styles.bubbleUser]}
-      >
-        <Text
-          style={[styles.text, isBot ? styles.textBot : styles.textUser]}
+      {isBot ? (
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>🫧</Text>
+        </View>
+      ) : null}
+      <View style={styles.bubbleColumn}>
+        {isBot ? <Text style={styles.senderLabel}>Nurse Bubbles</Text> : null}
+        <View
+          style={[styles.bubble, isBot ? styles.bubbleBot : styles.bubbleUser]}
         >
-          {content}
-        </Text>
-        <Text
-          style={[styles.time, isBot ? styles.timeBot : styles.timeUser]}
-        >
+          <Text
+            style={[styles.text, isBot ? styles.textBot : styles.textUser]}
+          >
+            {content}
+          </Text>
+        </View>
+        <Text style={[styles.time, isBot ? styles.timeBot : styles.timeUser]}>
           {time}
         </Text>
       </View>
@@ -39,47 +46,93 @@ export const MessageBubble = memo(MessageBubbleRaw);
 
 const styles = StyleSheet.create({
   row: {
-    paddingHorizontal: 12,
+    flexDirection: "row",
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
   },
   rowBot: {
     alignItems: "flex-start",
+    paddingRight: 48,
   },
   rowUser: {
-    alignItems: "flex-end",
+    justifyContent: "flex-end",
+    paddingLeft: 48,
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: palette.amber100,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: palette.amber200,
+    marginTop: 18,
+  },
+  avatarText: {
+    fontSize: 18,
+  },
+  bubbleColumn: {
+    flex: 1,
+  },
+  senderLabel: {
+    fontSize: typography.xs,
+    fontWeight: typography.semibold,
+    color: palette.amber600,
+    marginBottom: 3,
+    marginLeft: spacing.xs,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
   },
   bubble: {
-    maxWidth: "80%",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderCurve: "continuous",
   },
   bubbleBot: {
-    backgroundColor: "#FFF3E0",
-    borderBottomLeftRadius: 4,
+    backgroundColor: palette.white,
+    borderRadius: radii.lg,
+    borderTopLeftRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: palette.linen,
+    shadowColor: palette.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   bubbleUser: {
-    backgroundColor: "#00897B",
-    borderBottomRightRadius: 4,
+    backgroundColor: palette.culture700,
+    borderRadius: radii.lg,
+    borderTopRightRadius: radii.sm,
+    shadowColor: palette.culture700,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   text: {
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: typography.base,
+    lineHeight: 22,
   },
   textBot: {
-    color: "#333",
+    color: palette.espresso,
   },
   textUser: {
-    color: "#FFF",
+    color: palette.white,
   },
   time: {
-    fontSize: 11,
-    marginTop: 4,
+    fontSize: typography.xs,
+    marginTop: spacing.xs,
   },
   timeBot: {
-    color: "#999",
+    color: palette.amber400,
+    marginLeft: spacing.xs,
   },
   timeUser: {
-    color: "rgba(255,255,255,0.7)",
+    color: palette.culture300,
+    textAlign: "right",
+    marginRight: spacing.xs,
   },
 });

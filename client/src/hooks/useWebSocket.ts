@@ -35,6 +35,9 @@ export function useWebSocket(userId: string): UseWebSocketReturn {
     };
 
     ws.onmessage = (event) => {
+      // Ignore messages from a stale connection
+      if (wsRef.current !== ws) return;
+
       const data: WebSocketIncoming = JSON.parse(event.data);
 
       switch (data.type) {
@@ -55,6 +58,11 @@ export function useWebSocket(userId: string): UseWebSocketReturn {
     };
 
     ws.onclose = () => {
+      // Only handle if this is still the active connection.
+      // Without this guard, a stale WS closing after a user switch
+      // would nullify wsRef and trigger a reconnect to the old user.
+      if (wsRef.current !== ws) return;
+
       setStatus("disconnected");
       setIsTyping(false);
       wsRef.current = null;
@@ -77,6 +85,8 @@ export function useWebSocket(userId: string): UseWebSocketReturn {
 
   useEffect(() => {
     shouldReconnect.current = true;
+    setLastMessage(null);
+    setIsTyping(false);
     connect();
 
     return () => {
