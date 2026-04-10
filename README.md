@@ -117,6 +117,39 @@ A fermentation-obsessed kombucha culture who relates everything to gut health. C
 
 Off-topic questions get a gentle redirect back to gut health, staying fully in character.
 
+## Client Architecture
+
+```
+client/
+├── App.tsx                             # Entry point — SafeAreaProvider + ChatProvider
+├── src/
+│   ├── types.ts                        # Message, ConnectionStatus, WebSocket event types
+│   ├── config.ts                       # API/WS URLs (platform-aware), user list
+│   ├── api.ts                          # REST client — fetchMessages()
+│   ├── hooks/
+│   │   └── useWebSocket.ts             # WebSocket hook with auto-reconnect + backoff
+│   ├── context/
+│   │   └── ChatContext.tsx              # Lifted state provider — messages, user, actions
+│   ├── components/
+│   │   ├── MessageBubble.tsx           # Memo'd bubble (bot=amber/left, user=teal/right)
+│   │   ├── TypingIndicator.tsx         # Animated 3-dot bounce indicator
+│   │   ├── ConnectionStatusBanner.tsx  # Color-coded status banner
+│   │   ├── UserSwitcher.tsx            # Alice/Bob toggle
+│   │   └── ChatInput.tsx               # Text input + send button
+│   └── screens/
+│       └── ChatScreen.tsx              # Main screen — FlashList, keyboard handling
+```
+
+### Frontend Patterns
+
+- **FlashList** over FlatList for performant message rendering
+- **Memo'd list items** with primitive-only props to avoid unnecessary re-renders
+- **Pressable** over TouchableOpacity for press interactions
+- **Lifted state** via React Context with `{ state, actions }` interface
+- **Functional setState** to avoid stale closures in async callbacks
+- **Exponential backoff** WebSocket reconnect (caps at 16s)
+- **Message deduplication** by ID when appending from WebSocket
+
 ## Setup & Run
 
 ### Prerequisites
@@ -131,7 +164,14 @@ docker compose up --build
 # Server available at http://localhost:8000
 # API docs at http://localhost:8000/docs
 # Health check: curl http://localhost:8000/health
+
+# In a separate terminal — start the Expo client
+cd client
+npm install
+npx expo start
 ```
+
+Scan the QR code with Expo Go (iOS/Android) or press `a` for Android emulator / `i` for iOS simulator.
 
 ## Features
 
@@ -141,7 +181,7 @@ docker compose up --build
 - [x] Multi-user support (separate histories)
 - [x] Docker Compose orchestration
 - [x] Strict mypy type checking
-- [ ] React Native client
-- [ ] Connection status indicators
-- [ ] Typing indicator animation
-- [ ] User switcher UI
+- [x] React Native client (Expo + TypeScript)
+- [x] Connection status indicators
+- [x] Typing indicator animation
+- [x] User switcher UI
