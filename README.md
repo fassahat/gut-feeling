@@ -44,22 +44,31 @@ server/
 ├── init.sql                        # DB schema (auto-runs on first compose up)
 ├── mypy.ini                        # Strict type checking
 ├── requirements.txt
-└── app/
-    ├── main.py                     # App entry — lifespan, CORS, router wiring
-    ├── config.py                   # Settings via pydantic-settings
-    ├── database.py                 # Async SQLAlchemy engine + session
+├── requirements-test.txt
+├── app/
+│   ├── main.py                     # App entry — lifespan, CORS, router wiring
+│   ├── config.py                   # Settings via pydantic-settings
+│   ├── database.py                 # Async SQLAlchemy engine + session
+│   ├── controllers/
+│   │   ├── health.py               # GET /health
+│   │   ├── messages.py             # GET /api/messages — conversation history
+│   │   └── chat.py                 # WS /ws/{user_id} — real-time chat
+│   ├── models/
+│   │   ├── base.py                 # SQLAlchemy DeclarativeBase
+│   │   └── message.py              # Message ORM model
+│   ├── schemas/
+│   │   └── message.py              # Pydantic models (MessageOut, WebSocketMessageIn)
+│   └── services/
+│       ├── chatbot.py              # Nurse Bubbles personality engine
+│       └── connection_manager.py   # WebSocket connection tracker per user
+└── tests/                          # pytest test suite (mirrors app/ structure)
+    ├── conftest.py                 # In-memory SQLite fixtures, async test client
     ├── controllers/
-    │   ├── health.py               # GET /health
-    │   ├── messages.py             # GET /api/messages — conversation history
-    │   └── chat.py                 # WS /ws/{user_id} — real-time chat
-    ├── models/
-    │   ├── base.py                 # SQLAlchemy DeclarativeBase
-    │   └── message.py              # Message ORM model
-    ├── schemas/
-    │   └── message.py              # Pydantic models (MessageOut, WebSocketMessageIn)
+    │   ├── test_messages.py        # REST endpoint tests
+    │   └── test_chat.py           # WebSocket flow tests
     └── services/
-        ├── chatbot.py              # Nurse Bubbles personality engine
-        └── connection_manager.py   # WebSocket connection tracker per user
+        ├── test_chatbot.py         # Keyword matching + persona tests
+        └── test_connection_manager.py
 ```
 
 ### Architectural Decisions
@@ -122,18 +131,6 @@ docker compose up --build
 # Server available at http://localhost:8000
 # API docs at http://localhost:8000/docs
 # Health check: curl http://localhost:8000/health
-```
-
-### Local Development (without Docker)
-
-```bash
-cd server
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-DATABASE_URL="postgresql+asyncpg://postgres:password@localhost:5432/gutfeeling" \
-  uvicorn app.main:app --reload --port 8000
 ```
 
 ## Features
