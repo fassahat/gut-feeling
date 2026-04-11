@@ -10,9 +10,14 @@ const USER_DISPLAY: Record<UserId, { name: string; emoji: string }> = {
 interface UserSwitcherProps {
   currentUser: UserId;
   onSwitch: (userId: UserId) => void;
+  disabled?: boolean;
 }
 
-export function UserSwitcher({ currentUser, onSwitch }: UserSwitcherProps) {
+export function UserSwitcher({
+  currentUser,
+  onSwitch,
+  disabled = false,
+}: UserSwitcherProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>brewing as</Text>
@@ -24,8 +29,17 @@ export function UserSwitcher({ currentUser, onSwitch }: UserSwitcherProps) {
           return (
             <Pressable
               key={userId}
-              style={[styles.pill, isActive ? styles.pillActive : null]}
+              style={[
+                styles.pill,
+                isActive ? styles.pillActive : null,
+                disabled ? styles.pillDisabled : null,
+              ]}
               onPress={() => onSwitch(userId)}
+              disabled={disabled}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              accessibilityRole="button"
+              accessibilityLabel={`Switch to ${display.name}`}
+              accessibilityState={{ selected: isActive, disabled }}
             >
               <Text style={styles.pillEmoji}>{display.emoji}</Text>
               <Text
@@ -72,7 +86,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.xs,
     paddingHorizontal: spacing.md,
-    paddingVertical: 6,
+    paddingVertical: spacing.sm,
     borderRadius: radii.full,
     borderCurve: "continuous",
     backgroundColor: palette.cream,
@@ -82,6 +96,9 @@ const styles = StyleSheet.create({
   pillActive: {
     backgroundColor: palette.amber800,
     borderColor: palette.amber600,
+  },
+  pillDisabled: {
+    opacity: 0.5,
   },
   pillEmoji: {
     fontSize: 14,

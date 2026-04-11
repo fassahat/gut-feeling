@@ -29,6 +29,8 @@ export const palette = {
 
   // Accents
   rosehip: "#C4626A",
+  rose100: "#FDE8E8",
+  rose200: "#F5C6C6",
   ginger: "#D4843E",
   turmeric: "#D4A03E",
   lavender: "#8B7EB8",
@@ -62,6 +64,7 @@ export const spacing = {
   lg: 16,
   xl: 20,
   xxl: 28,
+  xxxl: 48,
 } as const;
 
 export const radii = {
@@ -70,4 +73,9 @@ export const radii = {
   lg: 22,
   xl: 28,
   full: 999,
+} as const;
+
+// Minimum recommended touch target (iOS 44pt / Android 48dp).
+export const sizes = {
+  touchTarget: 44,
 } as const;

@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useChat } from "../context/ChatContext";
 import { ChatInput } from "../components/ChatInput";
@@ -19,6 +20,7 @@ import type { Message } from "../types";
 export function ChatScreen() {
   const { state, actions } = useChat();
   const listRef = useRef<FlashListRef<Message>>(null);
+  const insets = useSafeAreaInsets();
 
   const renderItem = useCallback(
     ({ item }: { item: Message }) => (
@@ -45,10 +47,12 @@ export function ChatScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      // KeyboardAvoidingView is the root view, so no fixed header sits
+      // above it — offset is 0 regardless of notch size.
+      keyboardVerticalOffset={0}
     >
       {/* Header — apothecary jar label feel */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.headerContent}>
           <Text style={styles.headerEmoji}>🫧</Text>
           <View style={styles.headerText}>
@@ -65,6 +69,7 @@ export function ChatScreen() {
       <UserSwitcher
         currentUser={state.currentUser}
         onSwitch={actions.switchUser}
+        disabled={state.status === "connecting"}
       />
 
       <View style={styles.listContainer}>
@@ -103,8 +108,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: palette.amber800,
-    paddingTop: 52,
-    paddingBottom: 14,
+    // paddingTop is applied inline from safe-area insets
+    paddingBottom: spacing.md,
     paddingHorizontal: spacing.lg,
   },
   headerContent: {
@@ -146,8 +151,8 @@ const styles = StyleSheet.create({
   },
   empty: {
     alignItems: "center",
-    paddingHorizontal: 48,
-    paddingTop: 80,
+    paddingHorizontal: spacing.xxxl,
+    paddingTop: spacing.xxxl + spacing.xxl,
   },
   emptyEmoji: {
     fontSize: 48,

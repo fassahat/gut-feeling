@@ -23,9 +23,9 @@ const STATUS_CONFIG: Record<
   disconnected: {
     label: "Culture dormant",
     emoji: "💤",
-    bg: "#FDE8E8",
+    bg: palette.rose100,
     fg: palette.rosehip,
-    border: "#F5C6C6",
+    border: palette.rose200,
   },
 };
 

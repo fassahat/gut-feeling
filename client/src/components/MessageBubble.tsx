@@ -53,11 +53,11 @@ const styles = StyleSheet.create({
   },
   rowBot: {
     alignItems: "flex-start",
-    paddingRight: 48,
+    paddingRight: spacing.xxxl,
   },
   rowUser: {
     justifyContent: "flex-end",
-    paddingLeft: 48,
+    paddingLeft: spacing.xxxl,
   },
   avatar: {
     width: 36,

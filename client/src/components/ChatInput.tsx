@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { palette, typography, spacing, radii } from "../theme";
+import { palette, typography, spacing, radii, sizes } from "../theme";
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -43,6 +43,9 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         ]}
         onPress={handleSend}
         disabled={disabled || isEmpty}
+        accessibilityRole="button"
+        accessibilityLabel="Send message"
+        accessibilityState={{ disabled: disabled || isEmpty }}
       >
         <Text style={styles.sendText}>🫧</Text>
       </Pressable>
@@ -80,9 +83,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: sizes.touchTarget,
+    height: sizes.touchTarget,
+    borderRadius: radii.full,
     backgroundColor: palette.amber800,
     alignItems: "center",
     justifyContent: "center",
