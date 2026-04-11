@@ -2,6 +2,7 @@
 /.claude
 skills-lock.json
 CLAUDE.md
+/graphify-out
 
 # Python
 __pycache__/
