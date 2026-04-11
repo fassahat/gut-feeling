@@ -2,101 +2,120 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { WS_BASE_URL } from "../config";
 import type { ConnectionStatus, Message, WebSocketIncoming } from "../types";
 
+const INITIAL_RECONNECT_DELAY = 1_000;
 const MAX_RECONNECT_DELAY = 16_000;
+
+interface UseWebSocketOptions {
+  userId: string;
+  onMessage: (message: Message) => void;
+}
 
 interface UseWebSocketReturn {
   status: ConnectionStatus;
   isTyping: boolean;
-  lastMessage: Message | null;
   sendMessage: (content: string, userId: string) => void;
 }
 
-export function useWebSocket(userId: string): UseWebSocketReturn {
+export function useWebSocket({
+  userId,
+  onMessage,
+}: UseWebSocketOptions): UseWebSocketReturn {
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [isTyping, setIsTyping] = useState(false);
-  const [lastMessage, setLastMessage] = useState<Message | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectDelay = useRef(1_000);
+  const reconnectDelay = useRef(INITIAL_RECONNECT_DELAY);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shouldReconnect = useRef(true);
 
-  const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.close();
-    }
-
-    setStatus("connecting");
-    const ws = new WebSocket(`${WS_BASE_URL}/ws/${userId}`);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      // connected event comes from server, not onopen
-    };
-
-    ws.onmessage = (event) => {
-      // Ignore messages from a stale connection
-      if (wsRef.current !== ws) return;
-
-      const data: WebSocketIncoming = JSON.parse(event.data);
-
-      switch (data.type) {
-        case "connected":
-          setStatus("connected");
-          reconnectDelay.current = 1_000;
-          break;
-        case "typing":
-          setIsTyping(true);
-          break;
-        case "message":
-          setIsTyping(false);
-          setLastMessage(data.data);
-          break;
-        case "error":
-          break;
-      }
-    };
-
-    ws.onclose = () => {
-      // Only handle if this is still the active connection.
-      // Without this guard, a stale WS closing after a user switch
-      // would nullify wsRef and trigger a reconnect to the old user.
-      if (wsRef.current !== ws) return;
-
-      setStatus("disconnected");
-      setIsTyping(false);
-      wsRef.current = null;
-
-      if (shouldReconnect.current) {
-        reconnectTimer.current = setTimeout(() => {
-          reconnectDelay.current = Math.min(
-            reconnectDelay.current * 2,
-            MAX_RECONNECT_DELAY
-          );
-          connect();
-        }, reconnectDelay.current);
-      }
-    };
-
-    ws.onerror = () => {
-      ws.close();
-    };
-  }, [userId]);
+  // Keep the latest onMessage without re-subscribing the socket.
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
 
   useEffect(() => {
     shouldReconnect.current = true;
-    setLastMessage(null);
     setIsTyping(false);
+
+    const closeActiveSocket = () => {
+      const prev = wsRef.current;
+      if (prev && prev.readyState !== WebSocket.CLOSED) {
+        prev.close();
+      }
+      wsRef.current = null;
+    };
+
+    const connect = () => {
+      closeActiveSocket();
+
+      setStatus("connecting");
+      const ws = new WebSocket(`${WS_BASE_URL}/ws/${userId}`);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        if (wsRef.current !== ws) return;
+        setStatus("connected");
+        reconnectDelay.current = INITIAL_RECONNECT_DELAY;
+      };
+
+      ws.onmessage = (event) => {
+        // Ignore messages from a stale connection
+        if (wsRef.current !== ws) return;
+
+        const data: WebSocketIncoming = JSON.parse(event.data);
+
+        switch (data.type) {
+          case "connected":
+            // Server handshake ack; onopen already flipped status.
+            break;
+          case "typing":
+            setIsTyping(true);
+            break;
+          case "message":
+            setIsTyping(false);
+            onMessageRef.current(data.data);
+            break;
+          case "error":
+            break;
+        }
+      };
+
+      ws.onclose = () => {
+        // Only handle if this is still the active connection.
+        // Without this guard, a stale WS closing after a user switch
+        // would nullify wsRef and trigger a reconnect to the old user.
+        if (wsRef.current !== ws) return;
+
+        setStatus("disconnected");
+        setIsTyping(false);
+        wsRef.current = null;
+
+        if (shouldReconnect.current) {
+          reconnectTimer.current = setTimeout(() => {
+            reconnectDelay.current = Math.min(
+              reconnectDelay.current * 2,
+              MAX_RECONNECT_DELAY
+            );
+            connect();
+          }, reconnectDelay.current);
+        }
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+    };
+
     connect();
 
     return () => {
       shouldReconnect.current = false;
       if (reconnectTimer.current) {
         clearTimeout(reconnectTimer.current);
+        reconnectTimer.current = null;
       }
-      wsRef.current?.close();
+      closeActiveSocket();
     };
-  }, [connect]);
+  }, [userId]);
 
   const sendMessage = useCallback((content: string, uId: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -104,5 +123,5 @@ export function useWebSocket(userId: string): UseWebSocketReturn {
     }
   }, []);
 
-  return { status, isTyping, lastMessage, sendMessage };
+  return { status, isTyping, sendMessage };
 }

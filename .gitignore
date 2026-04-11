@@ -1,6 +1,7 @@
 /.agents
 /.claude
 skills-lock.json
+CLAUDE.md
 
 # Python
 __pycache__/

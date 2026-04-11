@@ -11,6 +11,7 @@ import { DEFAULT_USER, type UserId } from "../config";
 import { useWebSocket } from "../hooks/useWebSocket";
 import type { ConnectionStatus, Message } from "../types";
 
+
 interface ChatState {
   messages: Message[];
   currentUser: UserId;
@@ -34,8 +35,23 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserId>(DEFAULT_USER);
   const [messages, setMessages] = useState<Message[]>([]);
 
-  const { status, isTyping, lastMessage, sendMessage } =
-    useWebSocket(currentUser);
+  // Append new messages from WebSocket, filtering out echoes from a
+  // stale socket that belongs to a previous user.
+  const handleWsMessage = useCallback(
+    (message: Message) => {
+      if (message.user_id !== currentUser) return;
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
+    },
+    [currentUser]
+  );
+
+  const { status, isTyping, sendMessage } = useWebSocket({
+    userId: currentUser,
+    onMessage: handleWsMessage,
+  });
 
   // Load history on user switch
   useEffect(() => {
@@ -55,16 +71,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [currentUser]);
-
-  // Append new messages from WebSocket (only for current user)
-  useEffect(() => {
-    if (lastMessage && lastMessage.user_id === currentUser) {
-      setMessages((prev) => {
-        const exists = prev.some((m) => m.id === lastMessage.id);
-        return exists ? prev : [...prev, lastMessage];
-      });
-    }
-  }, [lastMessage, currentUser]);
 
   const send = useCallback(
     (content: string) => {
