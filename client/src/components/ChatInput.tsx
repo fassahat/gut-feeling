@@ -19,7 +19,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     setText("");
   }, [text, onSend]);
 
-  const isEmpty = text.trim().length === 0;
+  const isBlank = text.trim().length === 0;
+  const sendDisabled = disabled || isBlank;
 
   return (
     <View style={styles.container}>
@@ -37,15 +38,12 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         />
       </View>
       <Pressable
-        style={[
-          styles.sendButton,
-          disabled || isEmpty ? styles.sendDisabled : null,
-        ]}
+        style={[styles.sendButton, sendDisabled ? styles.sendDisabled : null]}
         onPress={handleSend}
-        disabled={disabled || isEmpty}
+        disabled={sendDisabled}
         accessibilityRole="button"
         accessibilityLabel="Send message"
-        accessibilityState={{ disabled: disabled || isEmpty }}
+        accessibilityState={{ disabled: sendDisabled }}
       >
         <Text style={styles.sendText}>🫧</Text>
       </Pressable>
@@ -97,6 +95,7 @@ const styles = StyleSheet.create({
   },
   sendDisabled: {
     backgroundColor: palette.linen,
+    opacity: 0.5,
     shadowOpacity: 0,
     elevation: 0,
   },

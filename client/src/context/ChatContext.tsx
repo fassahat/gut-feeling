@@ -17,6 +17,7 @@ interface ChatState {
   currentUser: UserId;
   status: ConnectionStatus;
   isTyping: boolean;
+  historyLoading: boolean;
 }
 
 interface ChatActions {
@@ -34,6 +35,7 @@ const ChatContext = createContext<ChatContextValue | null>(null);
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserId>(DEFAULT_USER);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   // Append new messages from WebSocket, filtering out echoes from a
   // stale socket that belongs to a previous user.
@@ -53,18 +55,25 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     onMessage: handleWsMessage,
   });
 
-  // Load history on user switch
+  // Load history on user switch. The empty state is suppressed while
+  // `historyLoading` is true so a quick switch doesn't flash the
+  // "the jar is quiet" placeholder.
   useEffect(() => {
     let cancelled = false;
+    setHistoryLoading(true);
+    setMessages([]);
 
     fetchMessages(currentUser)
       .then((history) => {
         if (!cancelled) {
           setMessages(history);
+          setHistoryLoading(false);
         }
       })
       .catch(() => {
-        // Silently fail — messages will come via WebSocket
+        if (!cancelled) {
+          setHistoryLoading(false);
+        }
       });
 
     return () => {
@@ -81,11 +90,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const switchUser = useCallback((userId: UserId) => {
     setCurrentUser(userId);
-    setMessages([]);
   }, []);
 
   const value: ChatContextValue = {
-    state: { messages, currentUser, status, isTyping },
+    state: { messages, currentUser, status, isTyping, historyLoading },
     actions: { send, switchUser },
   };
 

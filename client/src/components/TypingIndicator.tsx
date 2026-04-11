@@ -15,36 +15,40 @@ export function TypingIndicator() {
   ).current;
 
   useEffect(() => {
+    // Stagger only on first start; subsequent loop cycles run without a
+    // gap so the indicator feels alive the moment it mounts.
     const animations = anims.map((anim, i) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(i * 250),
-          Animated.parallel([
-            Animated.timing(anim, {
-              toValue: 1,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(scaleAnims[i], {
-              toValue: 1.3,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.parallel([
-            Animated.timing(anim, {
-              toValue: 0,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(scaleAnims[i], {
-              toValue: 0.8,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-          ]),
-        ])
-      )
+      Animated.sequence([
+        Animated.delay(i * 150),
+        Animated.loop(
+          Animated.sequence([
+            Animated.parallel([
+              Animated.timing(anim, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true,
+              }),
+              Animated.timing(scaleAnims[i], {
+                toValue: 1.3,
+                duration: 500,
+                useNativeDriver: true,
+              }),
+            ]),
+            Animated.parallel([
+              Animated.timing(anim, {
+                toValue: 0,
+                duration: 500,
+                useNativeDriver: true,
+              }),
+              Animated.timing(scaleAnims[i], {
+                toValue: 0.8,
+                duration: 500,
+                useNativeDriver: true,
+              }),
+            ]),
+          ])
+        ),
+      ])
     );
 
     Animated.parallel(animations).start();

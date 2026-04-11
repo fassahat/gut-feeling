@@ -61,7 +61,13 @@ export function useWebSocket({
         // Ignore messages from a stale connection
         if (wsRef.current !== ws) return;
 
-        const data: WebSocketIncoming = JSON.parse(event.data);
+        let data: WebSocketIncoming;
+        try {
+          data = JSON.parse(event.data);
+        } catch (err) {
+          console.warn("Failed to parse WS message", err);
+          return;
+        }
 
         switch (data.type) {
           case "connected":
@@ -75,6 +81,7 @@ export function useWebSocket({
             onMessageRef.current(data.data);
             break;
           case "error":
+            console.warn("WS server error:", data.message);
             break;
         }
       };

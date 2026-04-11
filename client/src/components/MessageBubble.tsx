@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { palette, typography, spacing, radii } from "../theme";
 import type { Sender } from "../types";
@@ -11,10 +11,14 @@ interface MessageBubbleProps {
 
 function MessageBubbleRaw({ content, sender, timestamp }: MessageBubbleProps) {
   const isBot = sender === "bot";
-  const time = new Date(timestamp).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const time = useMemo(
+    () =>
+      new Date(timestamp).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [timestamp]
+  );
 
   return (
     <View style={[styles.row, isBot ? styles.rowBot : styles.rowUser]}>
@@ -74,7 +78,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   bubbleColumn: {
-    flex: 1,
+    flexShrink: 1,
+    maxWidth: "85%",
   },
   senderLabel: {
     fontSize: typography.xs,

@@ -81,14 +81,16 @@ export function ChatScreen() {
           onContentSizeChange={handleContentSizeChange}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>🍵</Text>
-              <Text style={styles.emptyTitle}>The jar is quiet...</Text>
-              <Text style={styles.emptyText}>
-                Say hi to Nurse Bubbles! She's fizzing with excitement to chat
-                about your gut health journey.
-              </Text>
-            </View>
+            state.historyLoading ? null : (
+              <View style={styles.empty}>
+                <Text style={styles.emptyEmoji}>🍵</Text>
+                <Text style={styles.emptyTitle}>The jar is quiet...</Text>
+                <Text style={styles.emptyText}>
+                  Say hi to Nurse Bubbles! She's fizzing with excitement to
+                  chat about your gut health journey.
+                </Text>
+              </View>
+            )
           }
           ListFooterComponent={
             state.isTyping ? <TypingIndicator /> : null
