@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MessageOut(BaseModel):
@@ -16,5 +16,4 @@ class MessageOut(BaseModel):
 
 
 class WebSocketMessageIn(BaseModel):
-    content: str
-    user_id: str
+    content: str = Field(min_length=1, max_length=4000)

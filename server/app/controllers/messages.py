@@ -1,16 +1,17 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 
 from app.database import DbDep
 from app.models.message import Message
 from app.schemas.message import MessageOut
+from app.services.auth import require_token
 
 router = APIRouter(prefix="/api", tags=["messages"])
 
 
-@router.get("/messages", response_model=list[MessageOut])
+@router.get("/messages", response_model=list[MessageOut], dependencies=[Depends(require_token)])
 async def get_messages(
     user_id: Annotated[str, Query(min_length=1)],
     db: DbDep,

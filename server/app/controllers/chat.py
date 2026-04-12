@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import DbDep
+from app.services.auth import require_ws_token
 from app.models.message import Message
 from app.schemas.message import MessageOut, WebSocketMessageIn
 from app.services.chatbot import generate_response
@@ -32,7 +33,9 @@ async def websocket_chat(
     websocket: WebSocket,
     user_id: str,
     db: DbDep,
+    token: str | None = None,
 ) -> None:
+    require_ws_token(token)
     await manager.connect(user_id, websocket)
     await manager.send_json(user_id, {"type": "connected"})
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { WS_BASE_URL } from "../config";
+import { API_TOKEN, WS_BASE_URL } from "../config";
 import type { ConnectionStatus, Message, WebSocketIncoming } from "../types";
 
 const INITIAL_RECONNECT_DELAY = 1_000;
@@ -13,7 +13,7 @@ interface UseWebSocketOptions {
 interface UseWebSocketReturn {
   status: ConnectionStatus;
   isTyping: boolean;
-  sendMessage: (content: string, userId: string) => void;
+  sendMessage: (content: string) => void;
 }
 
 export function useWebSocket({
@@ -48,7 +48,7 @@ export function useWebSocket({
       closeActiveSocket();
 
       setStatus("connecting");
-      const ws = new WebSocket(`${WS_BASE_URL}/ws/${userId}`);
+      const ws = new WebSocket(`${WS_BASE_URL}/ws/${userId}?token=${encodeURIComponent(API_TOKEN)}`);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -124,9 +124,9 @@ export function useWebSocket({
     };
   }, [userId]);
 
-  const sendMessage = useCallback((content: string, uId: string) => {
+  const sendMessage = useCallback((content: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ content, user_id: uId }));
+      wsRef.current.send(JSON.stringify({ content }));
     }
   }, []);
 

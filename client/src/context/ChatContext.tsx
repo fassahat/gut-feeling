@@ -83,9 +83,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const send = useCallback(
     (content: string) => {
-      sendMessage(content, currentUser);
+      sendMessage(content);
     },
-    [sendMessage, currentUser]
+    [sendMessage]
   );
 
   const switchUser = useCallback((userId: UserId) => {

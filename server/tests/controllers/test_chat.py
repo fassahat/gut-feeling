@@ -6,44 +6,32 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.message import Message
+from tests.conftest import TEST_TOKEN
+
+WS_URL = f"/ws/{{user_id}}?token={TEST_TOKEN}"
 
 
 class TestWebSocketChat:
-    @pytest.mark.asyncio
-    async def test_connected_event_on_connect(self, client: AsyncClient) -> None:
-        async with client.stream("GET", "/ws/user-alice") as _:
-            pass
-        # WebSocket tests need the real ASGI websocket interface
-        # Using starlette's TestClient for WS tests instead
-
     @pytest.mark.asyncio
     async def test_full_chat_flow(self, db: AsyncSession) -> None:
         from starlette.testclient import TestClient
         from app.main import app
 
         with TestClient(app) as tc:
-            with tc.websocket_connect("/ws/user-test") as ws:
-                # Should receive connected event
+            with tc.websocket_connect(WS_URL.format(user_id="user-test")) as ws:
                 data = ws.receive_json()
                 assert data["type"] == "connected"
 
-                # Send a greeting message
-                ws.send_text(json.dumps({
-                    "content": "hello",
-                    "user_id": "user-test",
-                }))
+                ws.send_text(json.dumps({"content": "hello"}))
 
-                # Should receive user message echo
                 user_echo = ws.receive_json()
                 assert user_echo["type"] == "message"
                 assert user_echo["data"]["content"] == "hello"
                 assert user_echo["data"]["sender"] == "user"
 
-                # Should receive typing indicator
                 typing = ws.receive_json()
                 assert typing["type"] == "typing"
 
-                # Should receive bot response
                 bot_msg = ws.receive_json()
                 assert bot_msg["type"] == "message"
                 assert bot_msg["data"]["sender"] == "bot"
@@ -55,10 +43,9 @@ class TestWebSocketChat:
         from app.main import app
 
         with TestClient(app) as tc:
-            with tc.websocket_connect("/ws/user-test") as ws:
+            with tc.websocket_connect(WS_URL.format(user_id="user-test")) as ws:
                 ws.receive_json()  # connected event
 
-                # Send invalid JSON
                 ws.send_text("not valid json")
 
                 error = ws.receive_json()
@@ -71,19 +58,15 @@ class TestWebSocketChat:
         from app.main import app
 
         with TestClient(app) as tc:
-            with tc.websocket_connect("/ws/user-persist") as ws:
+            with tc.websocket_connect(WS_URL.format(user_id="user-persist")) as ws:
                 ws.receive_json()  # connected
 
-                ws.send_text(json.dumps({
-                    "content": "hi there",
-                    "user_id": "user-persist",
-                }))
+                ws.send_text(json.dumps({"content": "hi there"}))
 
                 ws.receive_json()  # user echo
                 ws.receive_json()  # typing
                 ws.receive_json()  # bot response
 
-        # Check DB has both user and bot messages
         result = await db.execute(
             select(Message).where(Message.user_id == "user-persist")
         )
@@ -102,16 +85,50 @@ class TestWebSocketChat:
         expected_responses = KEYWORD_RESPONSES[greeting_key]
 
         with TestClient(app) as tc:
-            with tc.websocket_connect("/ws/user-greet") as ws:
+            with tc.websocket_connect(WS_URL.format(user_id="user-greet")) as ws:
                 ws.receive_json()  # connected
 
-                ws.send_text(json.dumps({
-                    "content": "hello",
-                    "user_id": "user-greet",
-                }))
+                ws.send_text(json.dumps({"content": "hello"}))
 
                 ws.receive_json()  # user echo
                 ws.receive_json()  # typing
                 bot_msg = ws.receive_json()
 
                 assert bot_msg["data"]["content"] in expected_responses
+
+    @pytest.mark.asyncio
+    async def test_content_too_long_returns_error(self) -> None:
+        from starlette.testclient import TestClient
+        from app.main import app
+
+        with TestClient(app) as tc:
+            with tc.websocket_connect(WS_URL.format(user_id="user-flood")) as ws:
+                ws.receive_json()  # connected
+
+                ws.send_text(json.dumps({"content": "x" * 4001}))
+
+                error = ws.receive_json()
+                assert error["type"] == "error"
+
+    # --- Auth boundary tests ---
+
+    @pytest.mark.asyncio
+    async def test_rejected_without_token(self) -> None:
+        from starlette.testclient import TestClient
+        from app.main import app
+
+        with TestClient(app) as tc:
+            with pytest.raises(Exception):
+                # WebSocket should be rejected with 1008 before accept()
+                with tc.websocket_connect("/ws/user-notoken") as ws:
+                    ws.receive_json()
+
+    @pytest.mark.asyncio
+    async def test_rejected_with_wrong_token(self) -> None:
+        from starlette.testclient import TestClient
+        from app.main import app
+
+        with TestClient(app) as tc:
+            with pytest.raises(Exception):
+                with tc.websocket_connect("/ws/user-badtoken?token=wrong") as ws:
+                    ws.receive_json()

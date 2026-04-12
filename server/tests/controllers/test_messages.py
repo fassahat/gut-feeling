@@ -3,6 +3,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.message import Message
+from tests.conftest import TEST_TOKEN
 
 
 class TestGetMessages:
@@ -79,3 +80,25 @@ class TestGetMessages:
     ) -> None:
         response = await client.get("/api/messages", params={"user_id": ""})
         assert response.status_code == 422
+
+    # --- Auth boundary tests ---
+
+    @pytest.mark.asyncio
+    async def test_returns_401_without_token(
+        self, unauth_client: AsyncClient
+    ) -> None:
+        response = await unauth_client.get(
+            "/api/messages", params={"user_id": "user-alice"}
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_returns_401_with_wrong_token(
+        self, unauth_client: AsyncClient
+    ) -> None:
+        response = await unauth_client.get(
+            "/api/messages",
+            params={"user_id": "user-alice"},
+            headers={"Authorization": "Bearer wrong-token"},
+        )
+        assert response.status_code == 401

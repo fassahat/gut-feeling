@@ -1,17 +1,12 @@
 services:
   db:
     image: postgres:17-alpine
-    environment:
-      POSTGRES_USER: gutfeeling
-      POSTGRES_PASSWORD: gutfeeling
-      POSTGRES_DB: gutfeeling
-    ports:
-      - "5432:5432"
+    env_file: .env
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gutfeeling"]
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -20,8 +15,7 @@ services:
     build: ./server
     ports:
       - "8000:8000"
-    environment:
-      DATABASE_URL: "postgresql+asyncpg://gutfeeling:gutfeeling@db:5432/gutfeeling"
+    env_file: .env
     depends_on:
       db:
         condition: service_healthy

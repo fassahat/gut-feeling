@@ -47,25 +47,26 @@ server/
 ├── requirements-test.txt
 ├── app/
 │   ├── main.py                     # App entry — lifespan, CORS, router wiring
-│   ├── config.py                   # Settings via pydantic-settings
+│   ├── config.py                   # Settings via pydantic-settings (all values from env)
 │   ├── database.py                 # Async SQLAlchemy engine + session
 │   ├── controllers/
 │   │   ├── health.py               # GET /health
-│   │   ├── messages.py             # GET /api/messages — conversation history
-│   │   └── chat.py                 # WS /ws/{user_id} — real-time chat
+│   │   ├── messages.py             # GET /api/messages — conversation history (auth required)
+│   │   └── chat.py                 # WS /ws/{user_id} — real-time chat (auth required)
 │   ├── models/
 │   │   ├── base.py                 # SQLAlchemy DeclarativeBase
 │   │   └── message.py              # Message ORM model
 │   ├── schemas/
 │   │   └── message.py              # Pydantic models (MessageOut, WebSocketMessageIn)
 │   └── services/
+│       ├── auth.py                 # Bearer token + WebSocket token verification
 │       ├── chatbot.py              # Nurse Bubbles personality engine
 │       └── connection_manager.py   # WebSocket connection tracker per user
 └── tests/                          # pytest test suite (mirrors app/ structure)
-    ├── conftest.py                 # In-memory SQLite fixtures, async test client
+    ├── conftest.py                 # In-memory SQLite fixtures, async test clients (auth + unauth)
     ├── controllers/
-    │   ├── test_messages.py        # REST endpoint tests
-    │   └── test_chat.py           # WebSocket flow tests
+    │   ├── test_messages.py        # REST endpoint tests incl. auth boundary
+    │   └── test_chat.py           # WebSocket flow + auth rejection tests
     └── services/
         ├── test_chatbot.py         # Keyword matching + persona tests
         └── test_connection_manager.py
@@ -81,11 +82,11 @@ server/
 
 ### API Endpoints
 
-| Method | Path                        | Description                        |
-|--------|-----------------------------|------------------------------------|
-| GET    | `/health`                   | Health check                       |
-| GET    | `/api/messages?user_id=X`   | Fetch conversation history         |
-| WS     | `/ws/{user_id}`             | Real-time chat connection          |
+| Method | Path                                         | Auth required | Description                |
+|--------|----------------------------------------------|---------------|----------------------------|
+| GET    | `/health`                                    | No            | Health check               |
+| GET    | `/api/messages?user_id=X`                    | Bearer token  | Fetch conversation history |
+| WS     | `/ws/{user_id}?token=<token>`                | Query token   | Real-time chat connection  |
 
 ### WebSocket Message Types
 
@@ -99,7 +100,7 @@ server/
 
 **Client → Server:**
 ```json
-{ "content": "your message here", "user_id": "user-alice" }
+{ "content": "your message here" }
 ```
 
 ## Chatbot Persona: Nurse Bubbles
@@ -155,23 +156,62 @@ client/
 ### Prerequisites
 - Docker with Compose plugin (`docker compose`)
 
-### Quick Start
+### 1. Configure environment variables
+
+Secrets are split across two `.env` files — one for the backend, one for the Expo client.
+
+**Backend** (project root):
+```bash
+cp .env.example .env
+```
+Edit `.env` and set at minimum:
+```ini
+POSTGRES_PASSWORD=your-db-password
+API_TOKEN=your-api-token
+```
+
+**Expo client** (`client/`):
+```bash
+cp client/.env.example client/.env
+```
+Edit `client/.env` and set the same token:
+```ini
+EXPO_PUBLIC_API_TOKEN=your-api-token   # must match API_TOKEN above
+```
+
+> Both `.env` files are gitignored and must never be committed.
+> For production, replace `.env` with your secrets manager of choice —
+> AWS Secrets Manager, Docker secrets, or inject env vars directly into
+> your orchestrator (ECS task definition, Kubernetes secret, etc.).
+> The code doesn't change, only where the values come from.
+
+### 2. Start the backend
 
 ```bash
-# Start PostgreSQL + FastAPI server
 docker compose up --build
+# Server:   http://localhost:8000
+# API docs: http://localhost:8000/docs
+# Health:   curl http://localhost:8000/health
+```
 
-# Server available at http://localhost:8000
-# API docs at http://localhost:8000/docs
-# Health check: curl http://localhost:8000/health
+### 3. Start the Expo client
 
-# In a separate terminal — start the Expo client
+```bash
 cd client
 npm install
-npx expo start
+npx expo start --clear
 ```
 
 Scan the QR code with Expo Go (iOS/Android) or press `a` for Android emulator / `i` for iOS simulator.
+
+### Running tests
+
+```bash
+cd server
+pytest tests/ -v
+```
+
+Tests use an in-memory SQLite database and a fixed `test-token` — no running containers required.
 
 ## Features
 
@@ -185,3 +225,81 @@ Scan the QR code with Expo Go (iOS/Android) or press `a` for Android emulator / 
 - [x] Connection status indicators
 - [x] Typing indicator animation
 - [x] User switcher UI
+
+---
+
+## Security Considerations
+
+### What is implemented
+
+| # | Fix | Severity |
+|---|-----|----------|
+| Bearer token auth on `GET /api/messages` | Unauthenticated requests return 401 | HIGH |
+| Token query-param auth on WebSocket (`?token=`) | Invalid token closes with 1008 Policy Violation | HIGH |
+| CORS `allow_credentials=False` | Bearer tokens don't need cookie credentials; wildcard + credentials is invalid per spec | HIGH |
+| PostgreSQL port not published to host | DB unreachable outside the Docker network | MEDIUM |
+| WebSocket payload `user_id` removed | Server derives identity from path param only; client cannot spoof it | MEDIUM |
+| Message content capped at 4 000 characters | Prevents memory exhaustion from oversized payloads | LOW |
+
+Set the token via environment variable before starting:
+
+```yaml
+# docker-compose.yml → server → environment
+API_TOKEN: "your-secret-token-here"
+```
+
+Client usage:
+- **REST:** `Authorization: Bearer <token>` header
+- **WebSocket:** `ws://host:8000/ws/<user_id>?token=<token>`
+
+---
+
+### What a production deployment still needs
+
+#### 1. Replace the pre-shared token with JWT
+
+A single shared secret gives every user the same credential — a leaked token compromises everyone. In production:
+
+- Add `POST /api/login` that accepts credentials and returns a short-lived **JWT** (e.g. RS256, 15-minute access token + 7-day refresh token).
+- The JWT `sub` claim carries the user ID. The server extracts it from the *verified* token instead of trusting the path parameter. This eliminates the IDOR class of bugs entirely — a user can only ever see their own messages.
+
+```python
+# The WS path becomes /ws (no user_id) — identity comes from the token
+payload = jwt.decode(token, PUBLIC_KEY, algorithms=["RS256"])
+user_id = payload["sub"]   # authoritative; client cannot forge this
+```
+
+#### 2. Enforce HTTPS / WSS (TLS in transit)
+
+All traffic currently travels in **plaintext** over HTTP/WS. Health data (PHI) must be encrypted in transit (HIPAA Technical Safeguard §164.312(e)(1)). Put a TLS-terminating reverse proxy in front of the server:
+
+```
+# Caddy — automatic Let's Encrypt certificate
+api.yourdomain.com {
+    reverse_proxy server:8000
+}
+```
+
+Switch the client from `http://` / `ws://` to `https://` / `wss://`.
+
+#### 3. Restrict CORS to specific origins
+
+`allow_origins=["*"]` lets any website call your API from a browser. Set this to your exact client origin(s):
+
+```python
+cors_origins: list[str] = ["https://app.yourdomain.com"]
+```
+
+#### 4. Rotate database credentials and use a secrets manager
+
+The default credentials (`gutfeeling` / `gutfeeling`) are committed to source control. Before production: generate strong random credentials and inject them via a secrets manager (AWS Secrets Manager, HashiCorp Vault, Docker secrets) — never hardcoded in a file that gets committed.
+
+#### 5. Store the client token in SecureStore
+
+Use **Expo SecureStore** (backed by iOS Keychain / Android Keystore) — not `AsyncStorage`, which is unencrypted on-disk and readable on rooted devices:
+
+```typescript
+import * as SecureStore from 'expo-secure-store';
+await SecureStore.setItemAsync('api_token', token);
+const token = await SecureStore.getItemAsync('api_token');
+```
